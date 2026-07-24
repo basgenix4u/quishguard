@@ -1,0 +1,57 @@
+version: "3.8"
+
+services:
+  # === PostgreSQL Database ===
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: quishguard
+      POSTGRES_PASSWORD: quishguard_dev
+      POSTGRES_DB: quishguard_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U quishguard"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # === FastAPI Backend ===
+  api:
+    build:
+      context: .
+      dockerfile: backend.Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://quishguard:quishguard_dev@db:5432/quishguard_db
+      DATABASE_URL_SYNC: postgresql+psycopg2://quishguard:quishguard_dev@db:5432/quishguard_db
+      UPLOAD_DIR: ./uploads
+      DEBUG: "false"
+      GOOGLE_SAFE_BROWSING_API_KEY: ""
+      URLSCAN_API_KEY: ""
+    volumes:
+      - uploads_data:/app/uploads
+      - models_data:/app/models_pretrained
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # === Next.js Frontend ===
+  web:
+    build:
+      context: .
+      dockerfile: frontend.Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
+  uploads_data:
+  models_data:
