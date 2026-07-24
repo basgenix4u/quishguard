@@ -17,8 +17,8 @@ class AIImageDetails(BaseModel):
 
 
 class AIImageAnalysis(BaseModel):
-    verdict: str = Field(description="Detection verdict: 'real', 'fake', or 'uncertain'")
-    confidence: float = Field(ge=0.0, le=1.0, description="Confidence score 0.0–1.0")
+    verdict: str = Field(default="uncertain", description="Detection verdict: 'real', 'fake', or 'uncertain'")
+    confidence: float = Field(default=0.0, ge=0.0, le=1.0, description="Confidence score 0.0–1.0")
     details: AIImageDetails = Field(default_factory=AIImageDetails)
 
 
