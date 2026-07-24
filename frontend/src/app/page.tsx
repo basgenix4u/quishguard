@@ -1,31 +1,49 @@
-export default function Home() {
+"use client";
+
+import { useState } from "react";
+import { ImageUploader } from "@/components/ImageUploader";
+import { ScanResultCard } from "@/components/ScanResultCard";
+import { Navbar } from "@/components/Navbar";
+import { Footer } from "@/components/Footer";
+import type { Scan } from "@/types";
+
+export default function ScanPage() {
+  const [scanResult, setScanResult] = useState<Scan | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24">
-      <div className="z-10 max-w-5xl w-full text-center">
-        <h1 className="text-4xl font-bold tracking-tight text-primary mb-4">
-          🛡️ QuishGuard
-        </h1>
-        <p className="text-xl text-muted-foreground mb-8">
-          Multimodal Deep Learning Framework for Detecting AI-Generated Images &amp; QR Phishing
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
-          <div className="rounded-lg border bg-card p-6 text-card-foreground shadow-sm">
-            <h2 className="text-lg font-semibold mb-2">🔍 AI-Image Detection</h2>
-            <p className="text-sm text-muted-foreground">
-              Detect AI-generated/synthetic images using EfficientNet-B4, frequency analysis, and noise inconsistency mapping.
+    <div className="min-h-screen flex flex-col">
+      <Navbar />
+      <main className="flex-1 container px-4 md:px-8 py-8">
+        <div className="max-w-3xl mx-auto space-y-8">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold tracking-tight mb-2">🛡️ QuishGuard Scanner</h1>
+            <p className="text-muted-foreground">
+              Upload an image to detect AI-generated content and QR phishing attacks
             </p>
           </div>
-          <div className="rounded-lg border bg-card p-6 text-card-foreground shadow-sm">
-            <h2 className="text-lg font-semibold mb-2">🛡️ Quishing Detection</h2>
-            <p className="text-sm text-muted-foreground">
-              Decode QR codes and analyze embedded URLs for phishing using hybrid threat intelligence and visual tampering detection.
-            </p>
-          </div>
+
+          <ImageUploader
+            onScanComplete={(result) => {
+              setScanResult(result);
+              setError(null);
+            }}
+            onScanError={(err) => {
+              setError(err);
+              setScanResult(null);
+            }}
+          />
+
+          {error && (
+            <div className="rounded-lg border border-destructive bg-destructive/10 p-4 text-destructive text-sm">
+              ❌ {error}
+            </div>
+          )}
+
+          {scanResult && <ScanResultCard scan={scanResult} />}
         </div>
-        <div className="mt-8 text-sm text-muted-foreground">
-          Frontend smoke test — ✅ Next.js operational
-        </div>
-      </div>
-    </main>
+      </main>
+      <Footer />
+    </div>
   );
 }
