@@ -1,0 +1,75 @@
+# === Python ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+*.whl
+
+# === Virtual Environments ===
+.venv/
+venv/
+env/
+
+# === Environment Variables ===
+.env
+.env.local
+.env.production
+
+# === IDE ===
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# === ML Model Weights (large binary files) ===
+*.pt
+*.pth
+*.pkl
+*.h5
+*.onnx
+# Keep the .gitkeep placeholder
+!models_pretrained/.gitkeep
+
+# === Database ===
+*.db
+*.sqlite3
+
+# === Uploads ===
+uploads/
+!uploads/.gitkeep
+
+# === Logs ===
+*.log
+dev_server.log
+
+# === OS ===
+.DS_Store
+Thumbs.db
+
+# === Node.js ===
+node_modules/
+.next/
+out/
+.npm
+.yarn/
+
+# === Coverage ===
+coverage/
+htmlcov/
+.coverage
+.coverage.*
+pytest_cache/
+
+# === Docker ===
+docker-data/
+
+# === Cache ===
+.cache/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
