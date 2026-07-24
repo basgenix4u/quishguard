@@ -5,7 +5,7 @@ Compatible with both PostgreSQL (UUID, JSONB) and SQLite (String, JSON).
 """
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, String, Text, JSON
 from sqlalchemy.orm import relationship
@@ -36,7 +36,7 @@ class Scan(Base):
 
     # Metadata
     status = Column(String(20), default="completed")  # 'completed' | 'processing' | 'failed'
-    created_at = Column(DateTime, default=lambda: datetime.now(datetime.timezone.utc), index=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
 
     # API Key that performed the scan
     api_key_id = Column(String(36), ForeignKey("api_keys.id"), nullable=True)

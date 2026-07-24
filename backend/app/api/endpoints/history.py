@@ -6,7 +6,7 @@ GET /scans/stats — Dashboard statistics
 """
 
 import math
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
@@ -118,7 +118,7 @@ async def get_scan_stats(
     avg_result = await db.execute(select(func.avg(Scan.ai_confidence)).where(Scan.ai_confidence.isnot(None)))
     avg_ai_confidence = avg_result.scalar() or 0.0
 
-    seven_days_ago = datetime.now(datetime.timezone.utc) - timedelta(days=7)
+    seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
     scans_last_7_days = (await db.execute(select(func.count(Scan.id)).where(Scan.created_at >= seven_days_ago))).scalar() or 0
 
     return ScanStats(
