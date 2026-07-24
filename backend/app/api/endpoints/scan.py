@@ -4,6 +4,9 @@ QuishGuard — Scan API Endpoints
 POST /scans — Submit image for unified scan
 GET /scans/{scan_id} — Retrieve scan result
 GET /scans/{scan_id}/heatmap — Get artifact heatmap image
+
+Note: stats and history endpoints are in history.py and must be
+registered BEFORE the {scan_id} catch-all route.
 """
 
 import uuid
@@ -46,12 +49,6 @@ async def create_scan(
 ):
     """
     Submit an image for unified threat scan.
-
-    The image is analyzed through:
-    - AI-Generated Image Detection (if ai_check=true)
-    - QR Code Phishing Detection (if qr_check=true)
-
-    Returns a comprehensive scan report.
     """
     # Validate file type
     ext = validate_file_type(file.filename or "unknown.jpg")
@@ -90,7 +87,6 @@ async def create_scan(
     )
     existing_scan = existing.scalar_one_or_none()
     if existing_scan:
-        # Return existing scan result
         logger.info(f"Returning cached scan result for hash: {image_hash}")
         return _scan_to_response(existing_scan)
 
@@ -98,12 +94,12 @@ async def create_scan(
     scanner = get_scanner_service()
     scan_result = await scanner.scan(upload_path, options)
 
-    # Update scan_result with computed hash and filename
+    # Update scan_result with computed hash
     scan_result.image_hash = image_hash
 
     # Save to database
     db_scan = Scan(
-        id=uuid.UUID(scan_id),
+        id=scan_id,
         image_filename=filename,
         image_hash=image_hash,
         ai_verdict=scan_result.ai_verdict,
@@ -129,15 +125,7 @@ async def get_scan(
     db: AsyncSession = Depends(get_db),
 ):
     """Retrieve a scan result by ID."""
-    try:
-        scan_uuid = uuid.UUID(scan_id)
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid scan ID format",
-        )
-
-    result = await db.execute(select(Scan).where(Scan.id == scan_uuid))
+    result = await db.execute(select(Scan).where(Scan.id == scan_id))
     db_scan = result.scalar_one_or_none()
 
     if db_scan is None:
@@ -153,11 +141,7 @@ async def get_scan(
 async def get_heatmap(
     scan_id: str,
 ):
-    """
-    Get the artifact heatmap image for a scan.
-
-    Returns the heatmap as a PNG image.
-    """
+    """Get the artifact heatmap image for a scan."""
     from fastapi.responses import FileResponse
 
     heatmap_path = settings.upload_path / "heatmaps" / f"{scan_id}_heatmap.png"
@@ -177,7 +161,6 @@ async def get_heatmap(
 
 def _scan_to_response(db_scan: Scan) -> ScanResponse:
     """Convert a Scan ORM object to a ScanResponse Pydantic model."""
-    # Build AI analysis from DB fields
     ai_details_dict = db_scan.ai_details or {}
     ai_analysis = AIImageAnalysis(
         verdict=db_scan.ai_verdict or "uncertain",
@@ -189,7 +172,6 @@ def _scan_to_response(db_scan: Scan) -> ScanResponse:
         ),
     )
 
-    # Build QR analysis from DB fields
     quish_details_dict = db_scan.quish_details or {}
     threat_intel_data = quish_details_dict.get("threat_intel", {})
 
