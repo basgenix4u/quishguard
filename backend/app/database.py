@@ -1,32 +1,32 @@
 """
 QuishGuard — Database Connection & Session Management
 
-Uses PostgreSQL when available, falls back to SQLite for
-local development and testing. The database type is determined
-at runtime by attempting a connection.
+Production-ready:
+- On Render: Uses managed PostgreSQL (DATABASE_URL auto-provided)
+- Local dev: Falls back to SQLite if PostgreSQL unavailable
 """
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 from loguru import logger
 
-from app.config import settings
-
-# Determine database backend
-_db_type = "sqlite"  # Default to SQLite for local dev
-
-# PostgreSQL configuration
-_pg_url = settings.database_url
-# SQLite fallback
-_sqlite_url = "sqlite+aiosqlite:///./quishguard_local.db"
+from app.config import settings, _normalize_database_url
 
 
 async def _detect_database_type() -> str:
-    """Try PostgreSQL connection, fall back to SQLite if unavailable."""
+    """Detect which database backend is available."""
+    db_url = settings.database_url
+
+    # If URL starts with sqlite, use SQLite directly
+    if db_url.startswith("sqlite"):
+        return "sqlite"
+
+    # Try PostgreSQL connection
     try:
         import asyncpg
-        # Quick connection test
-        conn = await asyncpg.connect(_pg_url.replace("postgresql+asyncpg://", "postgresql://"))
+        # Convert asyncpg URL to plain postgresql for connection test
+        pg_url = db_url.replace("postgresql+asyncpg://", "postgresql://")
+        conn = await asyncpg.connect(pg_url)
         await conn.close()
         return "postgresql"
     except Exception:
@@ -36,32 +36,34 @@ async def _detect_database_type() -> str:
 
 async def create_db_engine():
     """Create the async engine based on detected database type."""
-    global _db_type
+    global _engine, _async_session_factory
 
-    _db_type = await _detect_database_type()
+    db_type = await _detect_database_type()
 
-    if _db_type == "postgresql":
+    if db_type == "postgresql":
         engine = create_async_engine(
-            _pg_url,
+            settings.database_url,
             echo=settings.debug,
             pool_size=5,
             max_overflow=10,
             pool_pre_ping=True,
         )
-        logger.info(f"✅ Using PostgreSQL: {_pg_url.split('@')[-1]}")
+        logger.info(f"✅ PostgreSQL connected: {settings.database_url.split('@')[-1]}")
     else:
+        sqlite_url = "sqlite+aiosqlite:///./quishguard_local.db"
         engine = create_async_engine(
-            _sqlite_url,
+            sqlite_url,
             echo=settings.debug,
         )
-        logger.info(f"✅ Using SQLite fallback: quishguard_local.db")
+        logger.info(f"✅ SQLite fallback: quishguard_local.db")
+
+    _async_session_factory = async_sessionmaker(
+        bind=engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+    )
 
     return engine
-
-
-# Engine will be initialized on startup
-_engine = None
-_async_session_factory = None
 
 
 class Base(DeclarativeBase):
@@ -69,20 +71,18 @@ class Base(DeclarativeBase):
     pass
 
 
-async def init_db() -> None:
-    """Initialize database — create engine, session factory, and all tables."""
-    global _engine, _async_session_factory
+# Engine initialized on startup
+_engine = None
+_async_session_factory = None
 
-    # Import all models so they register with Base.metadata
+
+async def init_db() -> None:
+    """Initialize database — create engine, session factory, and tables."""
+    global _engine
+
     from app.models import Scan, ApiKey  # noqa: F401
 
     _engine = await create_db_engine()
-
-    _async_session_factory = async_sessionmaker(
-        bind=_engine,
-        class_=AsyncSession,
-        expire_on_commit=False,
-    )
 
     async with _engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

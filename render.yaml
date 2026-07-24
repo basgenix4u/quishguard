@@ -1,0 +1,43 @@
+# Render Blueprint — Production Deployment Config
+# https://render.com/docs/blueprint-spec
+
+databases:
+  - name: quishguard-db
+    plan: Starter          # $7/month — managed PostgreSQL
+    region: oregon         # Choose closest to your users
+    postgresMajorVersion: 15
+
+services:
+  # === FastAPI Backend ===
+  - type: web
+    name: quishguard-api
+    runtime: python
+    plan: Standard         # $25/month — 2GB RAM needed for PyTorch
+    region: oregon
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: quishguard-db
+          property: connectionString
+      - key: DATABASE_URL_SYNC
+        sync: false
+        value: ""  # Will be set manually from PG connection string (change asyncpg to psycopg2)
+      - key: SECRET_KEY
+        generateValue: true  # Auto-generate secure secret
+      - key: UPLOAD_DIR
+        value: /data/uploads
+      - key: GOOGLE_SAFE_BROWSING_API_KEY
+        value: ""  # Set your key later in Render dashboard
+      - key: URLSCAN_API_KEY
+        value: ""  # Set your key later
+      - key: CORS_ORIGINS
+        value: https://quishguard.vercel.app  # Your Vercel URL
+      - key: PYTHON_VERSION
+        value: "3.11.8"
+    # Persistent disk for uploads + model weights
+    disk:
+      name: quishguard-data
+      mountPath: /data
+      sizeGB: 5              # $0.50/month — stores uploads + ML models
