@@ -21,7 +21,7 @@ class ApiKey(Base):
     name = Column(String(100), nullable=False)
     is_active = Column(Boolean, default=True)
     rate_limit = Column(Integer, default=100)  # requests per hour
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(datetime.timezone.utc))
     expires_at = Column(DateTime, nullable=True)
 
     scans = relationship("Scan", back_populates="api_key")
