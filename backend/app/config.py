@@ -46,7 +46,9 @@ class Settings(BaseSettings):
     port: int = int(os.environ.get("PORT", "8000"))
 
     # === Security ===
-    secret_key: str = os.environ.get("SECRET_KEY", "change-me-to-a-secure-random-string-in-production")
+    # No insecure default: production refuses to start without a strong key
+    # (see the fail-closed guard below).
+    secret_key: str = os.environ.get("SECRET_KEY", "")
     api_key_prefix: str = "qg_live_"
     encryption_algorithm: str = "HS256"
 
@@ -108,3 +110,19 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+# Fail closed: never run with a missing or placeholder secret in production.
+_INSECURE_SECRET_KEYS = {
+    "",
+    "change-me",
+    "changeme",
+    "secret",
+    "change-me-to-a-secure-random-string-in-production",
+}
+if settings.secret_key.strip().lower() in _INSECURE_SECRET_KEYS or len(settings.secret_key) < 32:
+    if not settings.debug:
+        raise RuntimeError(
+            "SECRET_KEY is missing or insecure. Generate a strong random value "
+            "(>= 32 characters) and set it in the environment before running "
+            "in production."
+        )
