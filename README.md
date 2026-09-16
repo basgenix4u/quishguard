@@ -2,6 +2,14 @@
 
 **Multimodal Deep Learning Framework for Detecting AI-Generated Images and QR Phishing (Quishing)**
 
+
+[![Python](https://img.shields.io/badge/Backend-Python%20%2F%20FastAPI-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org)
+[![Next.js](https://img.shields.io/badge/Frontend-Next.js-black?style=for-the-badge&logo=next.js)](https://nextjs.org)
+[![PyTorch](https://img.shields.io/badge/ML-PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org)
+[![Tests](https://img.shields.io/badge/Tests-16%20passing-41B883?style=for-the-badge&logo=pytest&logoColor=white)](https://github.com/basgenix4u/quishguard)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](./LICENSE)
+
+
 ---
 
 ## 🔬 Overview
@@ -243,4 +251,8 @@ MIT License — See [LICENSE](LICENSE) for details.
 
 ---
 
-**Built by AI Software Factory** • [GitHub Repository](https://github.com/basgenix4u/quishguard)
+<div align="center">
+
+Built by [Abdulbasit Abdulalim](https://github.com/basgenix4u)
+
+</div>
